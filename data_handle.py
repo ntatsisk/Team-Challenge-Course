@@ -8,7 +8,9 @@ def data_preprocess(min_dim_x=128, min_dim_y=128, min_dim_z=1):
     root = './Data/'
     images = np.zeros(shape=(1, min_dim_y, min_dim_x))
     images_gt = np.zeros(shape=(1, min_dim_y, min_dim_x))
+    patient_ids = np.array([], dtype=int)
     for subdir in os.listdir(root):
+        patient_id = int(subdir[-3:]) # eg patient085 --> 85
         for filename in os.listdir(root + subdir):
             if 'frame' in filename:
                 # Read image and convert to numpy array
@@ -19,6 +21,7 @@ def data_preprocess(min_dim_x=128, min_dim_y=128, min_dim_z=1):
                 # Calculate how much it needs to be cropped
                 x_diff = im_array.shape[2] - min_dim_x
                 y_diff = im_array.shape[1] - min_dim_y
+                z_dim = im_array.shape[0]
 
                 # Crop the array
                 if (x_diff>0):
@@ -34,6 +37,8 @@ def data_preprocess(min_dim_x=128, min_dim_y=128, min_dim_z=1):
                     images_gt = np.concatenate((images_gt, cropped_array), axis=0)
                 else:
                     images = np.concatenate((images, cropped_array), axis=0)
+                    # append z same patient ids (so that patient ids and "images" have the same first dim)
+                    patient_ids = np.append(patient_ids, np.full(shape=z_dim, fill_value=patient_id))
 
     # Remove first helper array for the concatenation
     images = images[1:, :, :]
@@ -42,3 +47,4 @@ def data_preprocess(min_dim_x=128, min_dim_y=128, min_dim_z=1):
     # Save the data into numpy arrays
     np.save("cropped_images", images)
     np.save("cropped_images_gt", images_gt)
+    np.save("patient_ids", patient_ids)
