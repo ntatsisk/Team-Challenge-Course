@@ -1,3 +1,3 @@
 # Team-Challenge-Course
 
-Playing around with the MNIST dataset.
+We are doing very serious work here
