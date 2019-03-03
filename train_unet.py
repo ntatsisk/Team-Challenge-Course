@@ -2,29 +2,42 @@ import numpy as np
 import tensorflow as tf
 import keras
 from keras.models import model_from_json
+from keras.callbacks import ModelCheckpoint
 import time
 from unet_architecture import *
 from data_handle import *
 import os
+import ast
+
+rescale_bool = True
 
 # Load the data
-exists1 = os.path.isfile("cropped_images.npy")
-exists2 = os.path.isfile("cropped_images_gt.npy")
+if rescale_bool:
+    exists1 = os.path.isfile("cropped_rescaled_images.npy")
+    exists2 = os.path.isfile("cropped_rescaled_images_gt.npy")
+else:
+    exists1 = os.path.isfile("cropped_images.npy")
+    exists2 = os.path.isfile("cropped_images_gt.npy")
 
 # Check if data numpy arrays are not created
 if not exists1 or not exists2:
     print("Creating the files ... \n\n")
-    data_preprocess()
+    if rescale_bool:
+        data_preprocess(rescale_bool=rescale_bool, new_scale_factor=0.585)
+    else:
+        data_preprocess()
 
 # Load the data
 print("Loading the data ...\n\n")
-images = np.load("cropped_images.npy")
-images_gt = np.load("cropped_images_gt.npy")
-patient_ids = np.load("patient_ids.npy")
+if rescale_bool:
+    images = np.load("cropped_rescaled_images.npy")
+    images_gt = np.load("cropped_rescaled_images_gt.npy")
+else:
+    images = np.load("cropped_images.npy")
+    images_gt = np.load("cropped_images_gt.npy")
 
 print("Image data has size: {}".format(images.shape))
 print("Ground truth has size: {}".format(images_gt.shape))
-print("Patient ids array has size: {}\n\n".format(patient_ids.shape))
 
 # For now keep only the labels of the Left Venctricle (removes RV, myocardium)
 images_gt[images_gt != 3] = 0
@@ -38,9 +51,23 @@ images_gt = np.reshape(images_gt, newshape=(*images_gt.shape, 1))
 print("Reshaped image data has size: {}".format(images.shape))
 print("Reshaped ground truth has size: {}\n\n".format(images_gt.shape))
 
+# Load patient information
+patient_info = pd.read_csv("patient_info.csv", converters={"spacing": ast.literal_eval,"image_pixels": ast.literal_eval }) # the converter is used to convert back the tuple
+
+id_list = patient_info["patient_id"].to_numpy()
+image_sizes = patient_info["image_pixels"].to_numpy()
+image_sizes = np.array([*image_sizes])
+z_dim = image_sizes[:,2]
+
+# Create an array of (1902,) where each row corresponds to the ID of every slice
+# of the dataset
+patient_id_array = np.array([])
+for patient_id in id_list:
+    patient_id_array = np.append(patient_id_array, np.full(shape=2*z_dim[patient_id-1], fill_value=patient_id))
+
+print("The array of patient IDs has shape: ", patient_id_array.shape)
 # Split dataset to train/valid/test based on patient ids (doesnt mix patient slices)
 # First split the ids
-id_list = np.arange(1, np.amax(patient_ids)+1)
 np.random.seed(0) # seed for reproducability
 np.random.shuffle(id_list)
 train_ids = id_list[:70] # 70% - 15% - 15% split
@@ -48,9 +75,13 @@ valid_ids = id_list[70:85]
 test_ids = id_list[85:]
 
 # Create the id masks
-train_msk = np.in1d(patient_ids, train_ids)
-valid_msk = np.in1d(patient_ids, valid_ids)
-test_msk = np.in1d(patient_ids, test_ids)
+train_msk = np.isin(patient_id_array, train_ids)
+valid_msk = np.isin(patient_id_array, valid_ids)
+test_msk = np.isin(patient_id_array, test_ids)
+
+print("The train set consists of {} slices".format(np.count_nonzero(train_msk)))
+print("The validation set consists of {} slices".format(np.count_nonzero(valid_msk)))
+print("The test set consists of {} slices".format(np.count_nonzero(test_msk)))
 
 # Now split the images based on the masks
 train_set = images[train_msk]
@@ -70,8 +101,9 @@ test_set_gt = images_gt[test_msk]
 
 # Compile and train U-net
 model = unet(input_size=(128, 128, 1))
-model.fit(train_set, train_set_gt, batch_size=64, epochs=20)
-# score = model.evaluate(valid_set[:200, :, :, :], valid_set_gt[:200, :, :, :], batch_size=20)
+mc = ModelCheckpoint('weights{epoch:08d}.h5',
+                                     save_weights_only=True, period=5)
+model.fit(train_set, train_set_gt, batch_size=64, epochs=40)
 
 # Serialize the model to json
 print("Saving model and weights ...")
