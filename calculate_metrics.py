@@ -44,3 +44,15 @@ def optimal_treshold(ground_truth, prediction, low=0.99, high=0.999999, steps=10
     opt_dice = dice_scores[opt_pos]
 
     return opt_seg, opt_threshold, opt_dice
+
+def calculate_EF(ED_array, ES_array, spacing):
+    """ """
+    voxelvolume = spacing[0] * spacing[1] * spacing[2]
+
+    ED_volume = np.sum(ED_array==1)*voxelvolume
+    ES_volume = np.sum(ES_array==1)*voxelvolume
+
+    strokevolume = ED_volume - ES_volume
+    LV_EF = (strokevolume/ED_volume)*100
+
+    return LV_EF, strokevolume

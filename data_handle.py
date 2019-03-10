@@ -23,10 +23,13 @@ def data_preprocess(min_dim_x=128, min_dim_y=128, min_dim_z=1, rescale_bool=Fals
     spacing = []
     image_sizes =[]
     patient_ids = []
+    ED_volumes = []
+    ES_volumes = []
     for subdir in os.listdir(root):
         patient_id = int(subdir[-3:]) # eg patient085 --> 85
         once = True # flag to write only once per patient in the csv file
         if (patient_id-1)%5==0: print("Processed {} out of 100 patients".format(patient_id-1))
+        ED_frame_flag = True
         for filename in os.listdir(root + subdir):
             if 'frame' in filename:
                 # Read image and convert to numpy array
@@ -35,6 +38,16 @@ def data_preprocess(min_dim_x=128, min_dim_y=128, min_dim_z=1, rescale_bool=Fals
                 spac = im.GetSpacing()
                 im_array = sitk.GetArrayFromImage(im)
                 im_size_unscaled = im_array.shape
+                # Calculate EF - before rescaling/cropping
+                if 'gt' in filename:
+                    voxelvolume = spac[0]*spac[1]*spac[2]
+                    if ED_frame_flag: # the first frame of the folder is ED
+                        ED_volume = np.sum(im_array==3) * voxelvolume
+                        ED_volumes.append(ED_volume)
+                        ED_frame_flag = False
+                    else: # the second frame is ES
+                        ES_volume = np.sum(im_array==3) * voxelvolume
+                        ES_volumes.append(ES_volume)
                 # Rescale using spacing, LVs with spacing<1 will become larger
                 # while LVs with spacing>1 will become smaller (after cropping)
                 if rescale_bool:
@@ -92,6 +105,12 @@ def data_preprocess(min_dim_x=128, min_dim_y=128, min_dim_z=1, rescale_bool=Fals
     # reverse the order, final: (x,y,z)
     patient_info["image_pixels"] = tuple(image_sizes_np[:,[2,1,0]])
 
+    # Stroke volume and EF calculation
+    ED_volumes = np.array(ED_volumes, dtype=np.float32)
+    ES_volumes = np.array(ES_volumes, dtype=np.float32)
+    strokevolumes = ED_volumes - ES_volumes
+    patient_info["stroke_volume"] = strokevolumes*1e-3
+    patient_info["ejection_fraction"] = strokevolumes / ED_volumes * 100
     # Write to .csv
     patient_info.to_csv("patient_info.csv", index=False)
     # !Use the following to read later:!
