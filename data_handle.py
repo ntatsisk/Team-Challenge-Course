@@ -35,7 +35,7 @@ def data_preprocess(min_dim_x=128, min_dim_y=128, min_dim_z=1, rescale_bool=Fals
                 # Read image and convert to numpy array
                 filepath = '/'.join([root, subdir, filename])
                 im = sitk.ReadImage(filepath)
-                spac = im.GetSpacing()
+                spac = im.GetSpacing()  #Gets the physical size of each pixel as a vector
                 im_array = sitk.GetArrayFromImage(im)
                 im_size_unscaled = im_array.shape
                 # Calculate EF - before rescaling/cropping
