@@ -8,6 +8,7 @@ from unet_architecture import *
 from data_handle import *
 import os
 import ast
+import copy
 
 rescale_bool = True
 
@@ -43,8 +44,12 @@ print("Ground truth has size: {}".format(images_gt.shape))
 images_gt[images_gt != 3] = 0
 images_gt[images_gt == 3] = 1
 
-# Scale data and convert to 4D (requirement: for the conv2d training)
-images = images / np.amax(images) # scale
+# Zero-mean, unit-variance normalization
+mean_per_slice = np.mean(images, axis=(1,2), keepdims=True)
+std_per_slice =  np.std(images, axis=(1,2), keepdims=True)
+images = (images - mean_per_slice) / std_per_slice
+
+# Convert data to 4D (requirement: for the conv2d training)
 images = np.reshape(images, newshape=(*images.shape, 1))
 images_gt = np.reshape(images_gt, newshape=(*images_gt.shape, 1))
 
@@ -67,12 +72,22 @@ for patient_id in id_list:
 
 print("The array of patient IDs has shape: ", patient_id_array.shape)
 # Split dataset to train/valid/test based on patient ids (doesnt mix patient slices)
-# First split the ids
+# and sample uniformly each of the 5 groups of patients
 np.random.seed(0) # seed for reproducability
-np.random.shuffle(id_list)
-train_ids = id_list[:70] # 70% - 15% - 15% split
-valid_ids = id_list[70:85]
-test_ids = id_list[85:]
+train_ids = np.array([])
+valid_ids = np.array([])
+test_ids = np.array([])
+
+# There are 5 patient groups with 20 patients each
+samples_per_group = 20
+num_of_groups = 5
+for group in range(num_of_groups):
+    # Shuffle the patients of each group and split to train/valid/test
+    group_id_list = copy.deepcopy(id_list[group*samples_per_group:(group+1)*samples_per_group])
+    np.random.shuffle(group_id_list)
+    train_ids = np.append(train_ids, group_id_list[:14]) # 70% training
+    valid_ids = np.append(valid_ids, group_id_list[14:17]) # 15% validation
+    test_ids = np.append(test_ids, group_id_list[17:]) # 15% test
 
 # Create the id masks
 train_msk = np.isin(patient_id_array, train_ids)
