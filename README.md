@@ -30,7 +30,7 @@ Order of scripts:
    
 3. model_evaluation.ipynb
 
-## Script instructions
+## Script Instructions
 ### Main Script
 **train_model.py** is the main script that performs the training of a model and has a model and its weights as outputs. Before train_model.py can be run, center_detection.py needs to be run. train_model.py calls the data_preprocess function in data_preprocessing.py if there are not yet numpy arrays with image data present. After the data is split into training, validation and test, data augmentation is performed on the test set by calling the deformable_data_augmentation function from data_augmentation.py. Then the unet model from unet_architecture.py is called to train the model. The model and model weights are saved in model.json and model_weights.h5 respectively. These files can be used for the evaluation that is carried out in model_evaluation.ipynb.
 
