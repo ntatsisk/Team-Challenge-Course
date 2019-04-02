@@ -6,6 +6,13 @@ Repository of Team 3 for the course Team Challenge. Topic of this year is the se
 
 ### Prerequisites
 The following packages need to be installed:
+- SimpleITK
+- scipy
+- gryds
+- keras
+- tensorflow
+- skfuzzy
+- etc.. please add any that need to be added
 
 ### Installing
 Order of scripts:
