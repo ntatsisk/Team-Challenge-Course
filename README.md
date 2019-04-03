@@ -52,6 +52,6 @@ Dave van GruijtHuijsen
 
 Anouk Marinus
 
-Kostas Ntatsis
+Konstantinos Ntatsis
 
 Vera van Hal
