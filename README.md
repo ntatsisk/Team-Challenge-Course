@@ -16,7 +16,7 @@ The following packages need to be installed:
 - pandas
 - etc.. please add any that need to be added
 
-### Installing
+### Code Layout
 Order of scripts:
 ```
 1. center_detection.py
