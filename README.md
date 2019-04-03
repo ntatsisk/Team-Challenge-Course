@@ -14,6 +14,7 @@ The following packages need to be installed:
 - tensorflow
 - skfuzzy
 - pandas
+- skimage
 - etc.. please add any that need to be added
 
 ### Code Layout
