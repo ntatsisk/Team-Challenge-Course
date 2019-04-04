@@ -5,7 +5,7 @@ from keras.models import model_from_json
 from keras.callbacks import ModelCheckpoint
 import time
 from unet_architecture import *
-from data_preprocessing import *
+from data_preprocess import *
 from data_augmentation import *
 import os
 import ast
@@ -25,7 +25,8 @@ else:
 if not exists1 or not exists2:
     print("Creating the files ... \n\n")
     if rescale_bool:
-        data_preprocess(rescale_bool=rescale_bool, new_scale_factor=0.585)
+        data_preprocess(min_dim_x=144, min_dim_y=144, rescale_bool=rescale_bool,
+                            new_scale_factor=1.0)
     else:
         data_preprocess()
 
@@ -52,7 +53,7 @@ images = (images - mean_per_slice) / std_per_slice
 
 # Load patient information
 # the converter is used to convert back the tuple
-patient_info = pd.read_csv("patient_info.csv", converters={"spacing": ast.literal_eval,"image_pixels": ast.literal_eval }) 
+patient_info = pd.read_csv("patient_info.csv", converters={"spacing": ast.literal_eval,"image_pixels": ast.literal_eval })
 
 id_list = patient_info["patient_id"].to_numpy()
 image_sizes = patient_info["image_pixels"].to_numpy()
@@ -108,7 +109,7 @@ print("Augmented training set has size: {}\n".format(augmented_train_set.shape))
 print("Augmented ground truth in training set has size: {}\n".format(augmented_train_set_gt.shape))
 
 # Compile and train U-net
-model = unet(input_size=(128, 128, 1))
+model = unet(input_size=(144, 144, 1))
 mc = ModelCheckpoint('weights{epoch:08d}.h5',
                                      save_weights_only=True, period=5)
 model.fit(augmented_train_set, augmented_train_set_gt, batch_size=10, epochs=200)
