@@ -6,19 +6,24 @@ from LV_detection import LV_detection
 
 def center_detection(img, spacing):
     # input:
-    #   - img: 3D normalized numpy array (preferably end diastolic and precropped)
+    #   - img: 3D normalized numpy array (end diastolic)
     #   - spacing: Numpy spacing format [ z,y,x ]
     # output:
-    #   - cropped img End Diastolic
-    #   - cropped img End Systolic
+    #   - x-center of left ventricle
+    #   - y-center of left ventricle
+    
+    size_img = img.shape
+    # precrop
+    img = img[:,int(size_img[1]/2-0.9*size_img[1]/2):int(size_img[1]/2+0.9*size_img[1]/2),:]
+    img = img[:,:,int(size_img[2]/2-0.9*size_img[2]/2):int(size_img[2]/2+0.9*size_img[2]/2)]
     
     # select slice
     slice = np.floor(img.shape[0]/2)-2
     frame=img[slice.astype('int'),:, :] #middle_slice.astype(dtype='int')
     
     # calculate center of the image
-    dim= frame.shape
-    center = [dim[0]/2,dim[1]/2]
+    size_frame = frame.shape
+    center = [size_frame[0]/2,size_frame[1]/2]
     
     ### Parameters Threshold
     Area_tol = 500/(spacing[1]*spacing[2]) #voxels
@@ -55,11 +60,10 @@ def center_detection(img, spacing):
 #     crop = crop[:,:,int(xcenter-72):int(xcenter+72)]
 #     
 #     plt.figure()
-#     plt.imshow(img_ED[4,:,:],cmap='gray')
+#     plt.imshow(crop[4,:,:],cmap='gray')
 #     plt.show()
 # =============================================================================
 
-    
     return xcenter, ycenter
     
  
