@@ -15,7 +15,7 @@ The following packages need to be installed:
 - skfuzzy
 - pandas
 - skimage
-- etc.. please add any that need to be added
+- matplotlib
 
 ### Code Layout
 Order of scripts:
